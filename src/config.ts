@@ -32,14 +32,14 @@ export function camelToSnakeCase(str: string): string {
  * @param config - The configuration object to convert
  * @returns Array of command line argument pairs as readonly tuples
  */
-export function configToArgs(config: Record<string, unknown>): Array<readonly [string, string]> {
+export function configToArgs(config: Record<string, unknown>): readonly string[] {
     return Object.entries(config).flatMap(([key, value]) => {
         const entries = flattenConfig({ [key]: value });
         return entries.map(([k, v]) => {
             const configKey = camelToSnakeCase(k);
             // Stringify the value as JSON, but handle primitive values specially
             const configValue = typeof v === 'string' ? v : JSON.stringify(v);
-            return [`-c`, `${configKey}=${configValue}`] as const;
+            return `-c ${configKey}=${configValue}`;
         });
     });
 } 

@@ -10,7 +10,6 @@ import {
     ReviewDecision,
     AskForApproval,
     SandboxPermission,
-    ModelProviderInfo,
     CodexMessageTypeEnum,
     ConfigureSessionOperation,
     ErrorMessage
@@ -37,8 +36,6 @@ export interface CodexProcessOptions {
     cwd?: string;
     /** Environment variables to pass to the Codex process */
     env?: NodeJS.ProcessEnv;
-    /** OpenAI API key for authentication */
-    apiKey?: string;
     /** Session configuration for the Codex process */
     config?: Partial<Omit<ConfigureSessionOperation, 'type'>>;
     /** Logging level for the SDK */
@@ -63,29 +60,18 @@ export default class CodexSDK {
         this.options = {
             cwd: resolve(process.cwd(), options.cwd || ''),
             env: process.env,
-            apiKey: process.env.OPENAI_API_KEY || '',
             logLevel: LogLevel.INFO,
-            config: {
-                // provider: { provider: 'openai' },
-                // model: 'codex-mini-latest',
-                // model_reasoning_effort: { level: ModelReasoningEffort.LOW },
-                // model_reasoning_summary: { level: ModelReasoningSummary.CONCISE },
-                // approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
-                // sandbox_policy: { permissions: [SandboxPermission.DISK_WRITE_CWD] },
-                // disable_response_storage: false,
-                // cwd: process.cwd()
-            },
+            config: {},
             ...options,
         };
         
         this.logger = winston.createLogger({
             level: this.options.logLevel,
             format: winston.format.combine(
-                winston.format.timestamp(),
                 winston.format.colorize(),
-                winston.format.printf(({ timestamp, level, message, ...meta }) => {
+                winston.format.printf(({ level, message, ...meta }) => {
                     const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-                    return `[${timestamp}] ${level}: ${message}${metaStr ? '\n' + metaStr : ''}`;
+                    return `${level}: ${message}${metaStr ? '\n' + metaStr : ''}`;
                 })
             ),
             transports: [
@@ -106,20 +92,19 @@ export default class CodexSDK {
         const args = [
             '-a=never',
             '--skip-git-repo-check',
-            ...configToArgs(this.options.config).flat(),
-            'p'
+            ...configToArgs(this.options.config),
+            'proto'
         ] as const;
-
+        
         this.codexProc = spawn('codex', args, {
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: this.options.cwd,
             env: {
                 ...this.options.env,
-                OPENAI_API_KEY: this.options.apiKey,
             },
         });
 
-        this.logger.info('Codex: started with config:', { config: this.options.config });
+        this.logger.info('Codex: started with config:', this.options.config);
 
         if (!this.codexProc.stdout || !this.codexProc.stderr) {
             throw new Error('Failed to initialize Codex process streams');
@@ -198,27 +183,50 @@ export default class CodexSDK {
         this.stop();
         this.start();
     }
+    
+    /**
+     * Aborts the current operation.
+     * 
+     * @param requestId - The ID of the request to abort
+     */
+    abort(requestId: string) {
+        this.sendRaw({
+            id: requestId,
+            op: {
+                type: 'interrupt',
+            },
+        });
+    }
 
- /**
+    /**
      * Configures the Codex session with the specified settings.
      * This is a helper method that wraps the raw configure_session operation.
      * 
      * @param options - Session configuration options
      * @returns A promise that resolves when the session is configured
      */
-    async configureSession(options: Omit<ConfigureSessionOperation, 'type'>) {
-        const config: ConfigureSessionOperation = {
+    async configureSession(options: Partial<Omit<ConfigureSessionOperation, 'type'>>) {
+        const config = {
             type: 'configure_session',
+            provider: {
+                name: 'OpenAI',
+                base_url: 'https://api.openai.com/v1',
+                env_key: 'OPENAI_API_KEY',
+                env_key_instructions: 'Create an API key (https://platform.openai.com) and export it as an environment variable.',
+                wire_api: 'responses',
+                ...options.provider,
+            },
+            
+            model: 'o4-mini',
+            instructions: '',
+            
+            model_reasoning_effort: ModelReasoningEffort.LOW,
+            model_reasoning_summary: ModelReasoningSummary.CONCISE,
+            approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
+            sandbox_policy: { permissions: [SandboxPermission.DISK_WRITE_CWD] },
+            cwd: options.cwd || process.cwd(),
             ...options,
-            model_reasoning_effort: { level: options.model_reasoning_effort?.level || ModelReasoningEffort.LOW },
-            model_reasoning_summary: { level: options.model_reasoning_summary?.level || ModelReasoningSummary.CONCISE },
-            instructions: options.instructions || null,
-            approval_policy: options.approval_policy || AskForApproval.UNLESS_ALLOW_LISTED,
-            sandbox_policy: { permissions: options.sandbox_policy?.permissions || [SandboxPermission.DISK_WRITE_CWD] },
-            disable_response_storage: options.disable_response_storage || false,
-            notify: options.notify || null,
-            cwd: options.cwd || process.cwd()
-        };
+        } as ConfigureSessionOperation;
 
         return new Promise<void>((resolve, reject) => {
             const unsubscribe = this.onResponse((response) => {
@@ -233,7 +241,7 @@ export default class CodexSDK {
             });
 
             this.sendRaw({
-                id: 'config-session',
+                id: uuidv4(),
                 op: config
             });
         });
@@ -326,20 +334,6 @@ export default class CodexSDK {
     }
 
     /**
-     * Aborts the current operation.
-     * 
-     * @param requestId - The ID of the request to abort
-     */
-    abort(requestId: string) {
-        this.sendRaw({
-            id: requestId,
-            op: {
-                type: 'interrupt',
-            },
-        });
-    }
-
-    /**
      * Registers a callback function to handle Codex responses.
      * 
      * @param cb - Callback function that will be called with each response from Codex
@@ -348,12 +342,18 @@ export default class CodexSDK {
     onResponse(cb: (msg: CodexResponse<CodexMessageType>) => void) {
         this.emitter.on('response', cb);
 
-        return () => this.emitter.off('response', cb); // unsubscribe
+        return () => this.emitter.off('response', cb);
     }
     
+    /**
+     * Registers a callback function to handle Codex errors.
+     * 
+     * @param cb - Callback function that will be called with each error from Codex
+     * @returns A function that can be called to unsubscribe the callback
+     */
     onError(cb: (msg: CodexResponse<CodexMessageType>) => void) {
         this.emitter.on('error', cb);
 
-        return () => this.emitter.off('error', cb); // unsubscribe
+        return () => this.emitter.off('error', cb);
     }
 }

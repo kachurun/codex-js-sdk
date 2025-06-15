@@ -327,14 +327,13 @@ export interface ConfigureSessionOperation {
     type: 'configure_session';
     provider: ModelProviderInfo;
     model: string;
-    model_reasoning_effort: { level: ModelReasoningEffort };
-    model_reasoning_summary: { level: ModelReasoningSummary };
+    model_reasoning_effort: ModelReasoningEffort;
+    model_reasoning_summary: ModelReasoningSummary;
     instructions: string | null;
-    approval_policy: AskForApproval;
-    sandbox_policy: SandboxPolicy;
-    disable_response_storage: boolean;
     notify: string[] | null;
     cwd: string;
+    approval_policy: AskForApproval;
+    sandbox_policy: SandboxPolicy;
 }
 
 export interface InterruptOperation {
