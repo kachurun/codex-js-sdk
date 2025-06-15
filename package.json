@@ -1,0 +1,30 @@
+{
+    "version": "1.0.0",
+    "name": "@flexbe/codex-js-sdk",
+    "repository": "https://github.com/kachurun/codex-js-sdk",
+    "author": "Maksim Kachurin",
+    "license": "MIT",
+    "description": "Codex JS SDK",
+    "type": "module",
+    "module": "src/index.ts",
+    "types": "src/types.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./types": "./src/types.ts"
+    },
+    "devDependencies": {
+        "@types/node": "^22.15.31"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@types/uuid": "^10.0.0",
+        "dotenv": "^16.5.0",
+        "uuid": "^11.1.0",
+        "winston": "^3.17.0"
+    }
+}
