@@ -1,11 +1,39 @@
 import CodexSDK from '../src/CodexSDK';
-import { CodexResponse, CodexMessageTypeEnum, ExecApprovalRequestMessage, ApplyPatchApprovalRequestMessage, ModelReasoningEffort, ModelReasoningSummary, SandboxPermission, AskForApproval } from '../src/types';
+import { 
+    CodexResponse, 
+    CodexMessageTypeEnum, 
+    ExecApprovalRequestMessage, 
+    ApplyPatchApprovalRequestMessage, 
+    ModelReasoningEffort, 
+    ModelReasoningSummary, 
+    SandboxPermission, 
+    AskForApproval,
+    ConfigureSessionOperation,
+    ModelProviderInfo
+} from '../src/types';
 
 async function main() {
     // Create SDK instance with custom config
     const sdk = new CodexSDK({
+        codexPath: './node_modules/.bin/codex',
         // logLevel: LogLevel.DEBUG,
-        config: {}
+        config: {
+            model: 'claude-3-7-sonnet-latest',
+            provider: {
+                name: 'Anthropic',
+                base_url: 'https://api.anthropic.com/v1/messages',
+                env_key: 'ANTHROPIC_API_KEY',
+                env_key_instructions: 'Create an API key (https://console.anthropic.com) and export it as an environment variable.',
+                wire_api: 'responses'
+            },
+            model_reasoning_effort: ModelReasoningEffort.NONE,
+            model_reasoning_summary: ModelReasoningSummary.NONE,
+            approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
+            sandbox_policy: { 
+                permissions: [SandboxPermission.DISK_WRITE_CWD] 
+            },
+            cwd: process.cwd()
+        }
     });
 
     // Set up response handler
@@ -43,20 +71,23 @@ async function main() {
 
     // Configure session
     await sdk.configureSession({
-        model: 'codex-mini-latest',
+        model: 'claude-3-7-sonnet-latest',
+        provider: {
+            name: 'Anthropic',
+            base_url: 'https://api.anthropic.com/v1/messages',
+            env_key: 'ANTHROPIC_API_KEY',
+            env_key_instructions: 'Create an API key (https://console.anthropic.com) and export it as an environment variable.',
+            wire_api: 'responses'
+        },
         instructions: 'You are a helpful coding assistant, your name is "Flexbe Bot". Provide concise and clear responses.',
         model_reasoning_effort: ModelReasoningEffort.NONE,
         model_reasoning_summary: ModelReasoningSummary.NONE,
-        provider: {
-            name: 'OpenAI',
-            base_url: 'https://api.openai.com/v1',
-            env_key: 'OPENAI_API_KEY',
-            env_key_instructions: 'Create an API key (https://platform.openai.com) and export it as an environment variable.',
-            wire_api: 'responses'
-        },
         approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
-        sandbox_policy: { permissions: [SandboxPermission.DISK_WRITE_CWD] },
-        cwd: process.cwd()
+        sandbox_policy: { 
+            permissions: [SandboxPermission.DISK_WRITE_CWD] 
+        },
+        cwd: process.cwd(),
+        disable_response_storage: false
     });
 
     // Send a test message

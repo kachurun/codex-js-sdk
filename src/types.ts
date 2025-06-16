@@ -1,3 +1,6 @@
+import { LogLevel } from './CodexSDK';
+import { PathLike } from 'fs';
+
 // Base response type
 export interface CodexResponse<T extends CodexMessageType = CodexMessageType> {
     id: string;
@@ -261,54 +264,12 @@ export interface HistoryConfig {
     persistence?: HistoryPersistence;
 }
 
-export interface CodexConfig {
-    // Model configuration
-    model?: string;
-    model_provider?: string;
-    model_providers?: Record<string, ModelProvider>;
-    model_reasoning_effort?: ModelReasoningEffort;
-    model_reasoning_summary?: ModelReasoningSummary;
-
-    // Session configuration
-    instructions?: string;
-    approval_policy?: ApprovalPolicy;
-    sandbox_permissions?: string[];
-    disable_response_storage?: boolean;
-
-    // Environment configuration
-    shell_environment_policy?: ShellEnvironmentPolicy;
-
-    // MCP configuration
-    mcp_servers?: Record<string, McpServer>;
-
-    // Notification configuration
-    notify?: string[];
-
-    // History configuration
-    history?: HistoryConfig;
-
-    // UI configuration
-    file_opener?: FileOpener;
-    hide_agent_reasoning?: boolean;
-    project_doc_max_bytes?: number;
-    tui?: TuiConfig;
-
-    // Profile configuration
-    profile?: string;
-    profiles?: Record<string, Partial<CodexConfig>>;
-}
-
 export interface ModelProviderInfo {
-    /** Friendly display name */
     name: string;
-    /** Base URL for the provider's OpenAI-compatible API */
     base_url: string;
-    /** Environment variable that stores the user's API key for this provider */
-    env_key: string | null;
-    /** Optional instructions to help the user get a valid value for the variable and set it */
-    env_key_instructions: string | null;
-    /** Which wire protocol this provider expects */
-    wire_api: 'chat' | 'responses';
+    env_key: string;
+    env_key_instructions: string;
+    wire_api: 'responses';
 }
 
 export interface ReasoningEffortConfig {
@@ -329,11 +290,12 @@ export interface ConfigureSessionOperation {
     model: string;
     model_reasoning_effort: ModelReasoningEffort;
     model_reasoning_summary: ModelReasoningSummary;
-    instructions: string | null;
-    notify: string[] | null;
-    cwd: string;
+    instructions?: string;
     approval_policy: AskForApproval;
     sandbox_policy: SandboxPolicy;
+    disable_response_storage?: boolean;
+    notify?: string[];
+    cwd: string;
 }
 
 export interface InterruptOperation {
@@ -401,3 +363,100 @@ export type Operation<T extends CodexMessage> = T['op'];
 //         items: [...]
 //     }
 // };
+
+/**
+ * Configuration loaded from ~/.codex/config.toml
+ */
+export interface ConfigToml {
+    /** Optional override of model selection */
+    model?: string;
+    /** Provider to use from the model_providers map */
+    model_provider?: string;
+    /** Default approval policy for executing commands */
+    approval_policy?: AskForApproval;
+    /** Shell environment policy */
+    shell_environment_policy?: ShellEnvironmentPolicyToml;
+    /** Sandbox permissions */
+    sandbox_permissions?: SandboxPermission[];
+    /** Disable server-side response storage */
+    disable_response_storage?: boolean;
+    /** Optional external command to spawn for end-user notifications */
+    notify?: string[];
+    /** System instructions */
+    instructions?: string;
+    /** Definition for MCP servers that Codex can reach out to for tool calls */
+    mcp_servers?: Record<string, McpServerConfig>;
+    /** User-defined provider entries that extend/override the built-in list */
+    model_providers?: Record<string, ModelProviderInfo>;
+    /** Maximum number of bytes to include from an AGENTS.md project doc file */
+    project_doc_max_bytes?: number;
+    /** Profile to use from the `profiles` map */
+    profile?: string;
+    /** Named profiles to facilitate switching between different configurations */
+    profiles?: Record<string, ConfigProfile>;
+    /** Settings that govern if and what will be written to history.jsonl */
+    history?: History;
+    /** Optional URI-based file opener */
+    file_opener?: UriBasedFileOpener;
+    /** When set to `true`, `AgentReasoning` events will be hidden from the UI/output */
+    hide_agent_reasoning?: boolean;
+    /** Model reasoning effort */
+    model_reasoning_effort?: ModelReasoningEffort;
+    /** Model reasoning summary */
+    model_reasoning_summary?: ModelReasoningSummary;
+    /** Working directory */
+    cwd?: string;
+}
+
+/**
+ * Runtime configuration overrides that can be passed to the SDK
+ */
+export type ConfigOverrides = Partial<ConfigToml>;
+
+export interface ConfigProfile {
+    /** Model to use */
+    model?: string;
+    /** Provider to use */
+    model_provider?: string;
+    /** Approval policy */
+    approval_policy?: AskForApproval;
+    /** Disable response storage */
+    disable_response_storage?: boolean;
+}
+
+export interface ShellEnvironmentPolicyToml {
+    /** Whether to inherit environment variables */
+    inherit?: boolean;
+    /** Environment variables to set */
+    set?: Record<string, string>;
+}
+
+export interface McpServerConfig {
+    /** Server URL */
+    url: string;
+    /** Server API key */
+    api_key?: string;
+}
+
+export interface History {
+    /** History persistence mode */
+    persistence: 'none' | 'save-all';
+    /** Maximum bytes to store */
+    max_bytes?: number;
+}
+
+export interface UriBasedFileOpener {
+    /** URI scheme to use */
+    scheme: string;
+    /** Command to use for opening files */
+    command: string[];
+}
+
+
+export interface CodexProcessOptions {
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+    config?: ConfigOverrides;
+    logLevel?: LogLevel;
+    codexPath?: string;
+}

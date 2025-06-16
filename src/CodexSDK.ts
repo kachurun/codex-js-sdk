@@ -12,7 +12,8 @@ import {
     SandboxPermission,
     CodexMessageTypeEnum,
     ConfigureSessionOperation,
-    ErrorMessage
+    ErrorMessage,
+    ConfigOverrides
 } from './types';
 import { configToArgs } from './config';
 
@@ -36,10 +37,12 @@ export interface CodexProcessOptions {
     cwd?: string;
     /** Environment variables to pass to the Codex process */
     env?: NodeJS.ProcessEnv;
-    /** Session configuration for the Codex process */
-    config?: Partial<Omit<ConfigureSessionOperation, 'type'>>;
+    /** Configuration for the Codex process (overrides `~/.codex/config.toml`) */
+    config?: ConfigOverrides;
     /** Logging level for the SDK */
     logLevel?: LogLevel;
+    /** Custom path to the codex binary. If not provided, will look for 'codex' in PATH */
+    codexPath?: string;
 }
 
 /**
@@ -62,8 +65,9 @@ export default class CodexSDK {
             env: process.env,
             logLevel: LogLevel.INFO,
             config: {},
+            codexPath: undefined,
             ...options,
-        };
+        } as Required<CodexProcessOptions>;
         
         this.logger = winston.createLogger({
             level: this.options.logLevel,
@@ -96,7 +100,9 @@ export default class CodexSDK {
             'proto'
         ] as const;
         
-        this.codexProc = spawn('codex', args, {
+        const codexBinary = this.options.codexPath || 'codex';
+        
+        this.codexProc = spawn(codexBinary, args, {
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: this.options.cwd,
             env: {
@@ -216,10 +222,8 @@ export default class CodexSDK {
                 wire_api: 'responses',
                 ...options.provider,
             },
-            
             model: 'o4-mini',
             instructions: '',
-            
             model_reasoning_effort: ModelReasoningEffort.LOW,
             model_reasoning_summary: ModelReasoningSummary.CONCISE,
             approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
