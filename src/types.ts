@@ -1,5 +1,4 @@
 import { LogLevel } from './CodexSDK';
-import { PathLike } from 'fs';
 
 // Base response type
 export interface CodexResponse<T extends CodexMessageType = CodexMessageType> {
@@ -264,12 +263,22 @@ export interface HistoryConfig {
     persistence?: HistoryPersistence;
 }
 
+/**
+ * Determines which wire protocol the provider expects
+ */
+export enum WireApi {
+    /** Regular Chat Completions compatible with `/v1/chat/completions` */
+    CHAT = 'chat',
+    /** The experimental "Responses" API exposed by OpenAI at `/v1/responses` */
+    RESPONSES = 'responses'
+}
+
 export interface ModelProviderInfo {
     name: string;
     base_url: string;
     env_key: string;
     env_key_instructions: string;
-    wire_api: 'responses';
+    wire_api: WireApi;
 }
 
 export interface ReasoningEffortConfig {

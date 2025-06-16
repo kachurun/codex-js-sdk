@@ -1,25 +1,25 @@
 {
-  "compilerOptions": {
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noImplicitAny": true,
-    "noEmitOnError": false,
-    "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "strictNullChecks": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "downlevelIteration": true,
-    "resolveJsonModule": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "sourceMap": true,
-    "composite": true
-  },
-  "include": ["src/**/*"]
+    "compilerOptions": {
+        "skipLibCheck": true,
+        "declaration": true,
+        "declarationMap": true,
+        "noImplicitAny": true,
+        "noEmitOnError": false,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "strictNullChecks": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "downlevelIteration": true,
+        "resolveJsonModule": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "target": "ES2022",
+        "lib": ["ES2022"],
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "sourceMap": true,
+        "composite": true
+    },
+    "include": ["src/**/*"]
 }

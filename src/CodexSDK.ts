@@ -4,18 +4,18 @@ import { resolve } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import winston from 'winston';
 
-import { 
-    ModelReasoningEffort, 
-    ModelReasoningSummary, 
-    ReviewDecision,
-    AskForApproval,
-    SandboxPermission,
-    CodexMessageTypeEnum,
-    ConfigureSessionOperation,
-    ErrorMessage,
-    ConfigOverrides
-} from './types';
 import { configToArgs } from './config';
+import {
+    AskForApproval,
+    CodexMessageTypeEnum,
+    ConfigOverrides,
+    ConfigureSessionOperation,
+    ModelReasoningEffort,
+    ModelReasoningSummary,
+    ReviewDecision,
+    SandboxPermission,
+    WireApi
+} from './types';
 
 import type { CodexMessage, CodexMessageType, CodexResponse, InputItem } from './types';
 
@@ -26,7 +26,7 @@ export enum LogLevel {
     ERROR = 'error',
     WARN = 'warn',
     INFO = 'info',
-    DEBUG = 'debug',
+    DEBUG = 'debug'
 }
 
 /**
@@ -61,26 +61,26 @@ export default class CodexSDK {
      */
     constructor(options: CodexProcessOptions = {}) {
         this.options = {
-            cwd: resolve(process.cwd(), options.cwd || ''),
-            env: process.env,
             logLevel: LogLevel.INFO,
+            env: process.env,
             config: {},
-            codexPath: undefined,
             ...options,
+            cwd: resolve(process.cwd(), options.cwd || ''),
         } as Required<CodexProcessOptions>;
-        
+
         this.logger = winston.createLogger({
             level: this.options.logLevel,
             format: winston.format.combine(
                 winston.format.colorize(),
-                winston.format.printf(({ level, message, ...meta }) => {
+                winston.format.printf(({ level, message, ...meta }: { level: string; message: string; [key: string]: unknown }) => {
                     const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
-                    return `${level}: ${message}${metaStr ? '\n' + metaStr : ''}`;
+
+                    return `${ level }: ${ message }${ metaStr ? `\n${ metaStr }` : '' }`;
                 })
             ),
             transports: [
-                new winston.transports.Console()
-            ]
+                new winston.transports.Console(),
+            ],
         });
     }
 
@@ -97,11 +97,11 @@ export default class CodexSDK {
             '-a=never',
             '--skip-git-repo-check',
             ...configToArgs(this.options.config),
-            'proto'
+            'proto',
         ] as const;
-        
+
         const codexBinary = this.options.codexPath || 'codex';
-        
+
         this.codexProc = spawn(codexBinary, args, {
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: this.options.cwd,
@@ -121,8 +121,10 @@ export default class CodexSDK {
         this.codexProc.stdout.on('data', (chunk: string) => {
             try {
                 const json = JSON.parse(chunk);
+
                 this.logger.debug('Codex: message to user', { data: json });
                 this.emitter.emit('response', json);
+
                 return;
             }
             catch (_e: unknown) {
@@ -130,15 +132,19 @@ export default class CodexSDK {
             }
 
             const lines = chunk.split('\n');
+
             for (const line of lines) {
-                if (!line.trim()) continue;
+                if (!line.trim()) {
+                    continue;
+                }
 
                 try {
                     const json = JSON.parse(line);
+
                     this.logger.debug('Codex: message to user', { data: json });
                     this.emitter.emit('response', json);
                 }
-                catch (e) {
+                catch (_e: unknown) {
                     this.logger.warn('Codex: invalid JSON:', line);
                 }
             }
@@ -146,7 +152,7 @@ export default class CodexSDK {
 
         this.codexProc.stderr.on('data', (data: string) => {
             const errorData = data.toString().trim();
-            
+
             if (errorData) {
                 if (errorData.includes('INFO')) {
                     this.logger.info(`Codex: ${ errorData }`);
@@ -157,15 +163,15 @@ export default class CodexSDK {
                         id: 'error',
                         op: {
                             type: 'error',
-                            message: errorData
-                        }
+                            message: errorData,
+                        },
                     });
                 }
             }
         });
 
         this.codexProc.on('exit', (code: number) => {
-            this.logger.warn(`Codex: process exited with code ${code}`);
+            this.logger.warn(`Codex: process exited with code ${ code }`);
             this.codexProc = null;
         });
     }
@@ -189,7 +195,7 @@ export default class CodexSDK {
         this.stop();
         this.start();
     }
-    
+
     /**
      * Aborts the current operation.
      * 
@@ -219,7 +225,7 @@ export default class CodexSDK {
                 base_url: 'https://api.openai.com/v1',
                 env_key: 'OPENAI_API_KEY',
                 env_key_instructions: 'Create an API key (https://platform.openai.com) and export it as an environment variable.',
-                wire_api: 'responses',
+                wire_api: WireApi.RESPONSES,
                 ...options.provider,
             },
             model: 'o4-mini',
@@ -228,7 +234,7 @@ export default class CodexSDK {
             model_reasoning_summary: ModelReasoningSummary.CONCISE,
             approval_policy: AskForApproval.UNLESS_ALLOW_LISTED,
             sandbox_policy: { permissions: [SandboxPermission.DISK_WRITE_CWD] },
-            cwd: options.cwd || process.cwd(),
+            cwd: options.cwd || this.options.cwd,
             ...options,
         } as ConfigureSessionOperation;
 
@@ -237,20 +243,20 @@ export default class CodexSDK {
                 if (response.msg.type === CodexMessageTypeEnum.SESSION_CONFIGURED) {
                     unsubscribe();
                     resolve();
-                } 
+                }
                 else if (response.msg.type === CodexMessageTypeEnum.ERROR) {
                     unsubscribe();
-                    reject(new Error((response.msg as ErrorMessage).message));
+                    reject(new Error((response.msg).message));
                 }
             });
 
             this.sendRaw({
                 id: uuidv4(),
-                op: config
+                op: config,
             });
         });
     }
-    
+
     /**
      * Sends a raw message to the Codex process.
      * 
@@ -269,10 +275,11 @@ export default class CodexSDK {
         }
 
         try {
-            this.codexProc.stdin.write(`${JSON.stringify(message)}\n`);
+            this.codexProc.stdin.write(`${ JSON.stringify(message) }\n`);
         }
         catch (error) {
             this.logger.error('Failed to send message to Codex:', { error });
+
             throw error;
         }
     }
@@ -291,6 +298,8 @@ export default class CodexSDK {
                 items,
             },
         });
+
+        return runId;
     }
 
     /**
@@ -348,7 +357,7 @@ export default class CodexSDK {
 
         return () => this.emitter.off('response', cb);
     }
-    
+
     /**
      * Registers a callback function to handle Codex errors.
      * 

@@ -10,10 +10,12 @@
  */
 export function flattenConfig(obj: Record<string, unknown>, prefix = ''): Array<[string, unknown]> {
     return Object.entries(obj).flatMap(([k, v]) => {
-        const newKey = prefix ? `${prefix}.${k}` : k;
+        const newKey = prefix ? `${ prefix }.${ k }` : k;
+
         if (v && typeof v === 'object' && !Array.isArray(v) && v !== null) {
             return flattenConfig(v as Record<string, unknown>, newKey);
         }
+
         return [[newKey, v]];
     });
 }
@@ -24,7 +26,7 @@ export function flattenConfig(obj: Record<string, unknown>, prefix = ''): Array<
  * @returns The converted string in snake_case
  */
 export function camelToSnakeCase(str: string): string {
-    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    return str.replace(/[A-Z]/g, letter => `_${ letter.toLowerCase() }`);
 }
 
 /**
@@ -35,11 +37,13 @@ export function camelToSnakeCase(str: string): string {
 export function configToArgs(config: Record<string, unknown>): readonly string[] {
     return Object.entries(config).flatMap(([key, value]) => {
         const entries = flattenConfig({ [key]: value });
+
         return entries.map(([k, v]) => {
             const configKey = camelToSnakeCase(k);
             // Stringify the value as JSON, but handle primitive values specially
             const configValue = typeof v === 'string' ? v : JSON.stringify(v);
-            return `-c ${configKey}=${configValue}`;
+
+            return `-c ${ configKey }=${ configValue }`;
         });
     });
-} 
+}
