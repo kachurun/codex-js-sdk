@@ -1,6 +1,6 @@
 {
-    "version": "1.0.1",
-    "name": "@flexbe/codex-js-sdk",
+    "version": "1.0.0",
+    "name": "codex-js-sdk",
     "repository": "https://github.com/kachurun/codex-js-sdk",
     "author": "Maksim Kachurin",
     "license": "MIT",
