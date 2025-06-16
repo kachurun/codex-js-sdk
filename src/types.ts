@@ -462,10 +462,18 @@ export interface UriBasedFileOpener {
 }
 
 
+/**
+ * Configuration options for the Codex SDK
+ */
 export interface CodexProcessOptions {
+    /** Working directory for the Codex process */
     cwd?: string;
+    /** Environment variables to pass to the Codex process */
     env?: NodeJS.ProcessEnv;
+    /** Configuration for the Codex process (overrides `~/.codex/config.toml`) */
     config?: ConfigOverrides;
+    /** Logging level for the SDK */
     logLevel?: LogLevel;
+    /** Custom path to the codex binary. If not provided, will look for 'codex' in PATH */
     codexPath?: string;
 }

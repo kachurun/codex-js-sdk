@@ -37,14 +37,14 @@ npm install @openai/codex@native
 Then, install the SDK:
 
 ```bash
-npm install codex-js-sdk
+npm install @flexbe/codex-js-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { CodexSDK, LogLevel } from 'codex-js-sdk';
-import { CodexResponse, CodexMessageTypeEnum, ModelReasoningEffort, ModelReasoningSummary, SandboxPermission, AskForApproval } from 'codex-js-sdk';
+import { CodexSDK, LogLevel } from '@flexbe/codex-js-sdk';
+import { CodexResponse, CodexMessageTypeEnum, ModelReasoningEffort, ModelReasoningSummary, SandboxPermission, AskForApproval } from '@flexbe/codex-js-sdk';
 
 // Create a new SDK instance
 const sdk = new CodexSDK({

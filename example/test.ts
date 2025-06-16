@@ -1,4 +1,4 @@
-import CodexSDK from '../src/CodexSDK';
+import { CodexSDK } from '../src/CodexSDK';
 
 import { 
     CodexResponse, 

@@ -8,7 +8,6 @@ import { configToArgs } from './config';
 import {
     AskForApproval,
     CodexMessageTypeEnum,
-    ConfigOverrides,
     ConfigureSessionOperation,
     ModelReasoningEffort,
     ModelReasoningSummary,
@@ -17,7 +16,7 @@ import {
     WireApi
 } from './types';
 
-import type { CodexMessage, CodexMessageType, CodexResponse, InputItem } from './types';
+import type { CodexMessage, CodexMessageType, CodexProcessOptions, CodexResponse, InputItem } from './types';
 
 /**
  * Logging levels supported by the SDK
@@ -29,27 +28,12 @@ export enum LogLevel {
     DEBUG = 'debug'
 }
 
-/**
- * Configuration options for the Codex SDK
- */
-export interface CodexProcessOptions {
-    /** Working directory for the Codex process */
-    cwd?: string;
-    /** Environment variables to pass to the Codex process */
-    env?: NodeJS.ProcessEnv;
-    /** Configuration for the Codex process (overrides `~/.codex/config.toml`) */
-    config?: ConfigOverrides;
-    /** Logging level for the SDK */
-    logLevel?: LogLevel;
-    /** Custom path to the codex binary. If not provided, will look for 'codex' in PATH */
-    codexPath?: string;
-}
 
 /**
  * Main SDK class for interacting with the Codex process.
  * Handles process management, communication, and session configuration.
  */
-export default class CodexSDK {
+export class CodexSDK {
     private codexProc: ChildProcessWithoutNullStreams | null = null;
     private emitter = new EventEmitter();
     private options: Required<CodexProcessOptions>;
