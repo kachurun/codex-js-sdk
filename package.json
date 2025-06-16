@@ -6,11 +6,17 @@
     "license": "MIT",
     "description": "Codex JS SDK",
     "type": "module",
-    "module": "src/index.ts",
-    "types": "src/types.ts",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
     "exports": {
-        ".": "./src/index.ts",
-        "./types": "./src/types.ts"
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./types": {
+            "types": "./dist/types.d.ts",
+            "import": "./dist/types.js"
+        }
     },
     "devDependencies": {
         "@types/node": "^22.15.31"
@@ -19,12 +25,20 @@
         "typescript": "^5"
     },
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "prepublishOnly": "npm run build",
+        "test": "tsx example/test.ts"
     },
     "dependencies": {
         "@types/uuid": "^10.0.0",
         "dotenv": "^16.5.0",
         "uuid": "^11.1.0",
         "winston": "^3.17.0"
+    },
+    "files": [
+        "dist"
+    ],
+    "publishConfig": {
+        "access": "public"
     }
 }
